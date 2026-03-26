@@ -1,0 +1,16 @@
+/target
+/recording.wav
+/models/
+/utterances/
+/logs/
+/notes/
+.DS_Store
+
+# Environment
+.env
+.env.*
+*.env
+
+# Rust
+Cargo.lock.bak
+**/*.rs.bk

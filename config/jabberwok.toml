@@ -1,0 +1,11 @@
+[logging]
+level = "warn"
+targets = ["jabberwok=info"]
+
+[models]
+default = "parakeet-v3"
+
+[[models.model]]
+name = "parakeet-v3"
+url = "https://blob.handy.computer/parakeet-v3-int8.tar.gz"
+sha256 = "43d37191602727524a7d8c6da0eef11c4ba24320f5b4730f1a2497befc2efa77"
