@@ -31,6 +31,17 @@ is. Hold the hotkey, speak, release and your words appear in any focused input.
    ln -s /Applications/Jabberwok.app/Contents/MacOS/jabberwok /usr/local/bin/jabberwok
    ```
 
+Current GitHub release builds are not notarized yet. If macOS blocks the app on
+first launch, use one of these local workarounds:
+
+- In `System Settings -> Privacy & Security`, click `Open Anyway` after trying
+  to launch `Jabberwok.app`.
+- Remove quarantine manually, then launch the app:
+  ```sh
+  xattr -dr com.apple.quarantine /Applications/Jabberwok.app
+  open /Applications/Jabberwok.app
+  ```
+
 ### Homebrew
 
 > Coming soon.
