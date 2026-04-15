@@ -48,6 +48,7 @@ pub fn stage_app_bundle() -> Result<PathBuf> {
         .with_context(|| format!("failed to write Info.plist to {}", contents_dir.display()))?;
 
     copy_tree_filtered(Path::new("config"), &defaults_dir.join("config"))?;
+    sign_app_bundle(&app_dir)?;
 
     println!("staged macOS app bundle in {}", app_dir.display());
     Ok(app_dir)
@@ -210,6 +211,30 @@ fn mark_executable(path: &Path) -> Result<()> {
     perms.set_mode(0o755);
     fs::set_permissions(path, perms)
         .with_context(|| format!("failed to set executable bit on {}", path.display()))?;
+    Ok(())
+}
+
+fn sign_app_bundle(app_dir: &Path) -> Result<()> {
+    // Re-sign the assembled bundle so Gatekeeper evaluates the final app
+    // contents instead of the copied release binary's embedded signature data.
+    let status = Command::new("codesign")
+        .args(["--force", "--deep", "--sign", "-", "--timestamp=none"])
+        .arg(app_dir)
+        .status()
+        .with_context(|| format!("failed to run codesign for {}", app_dir.display()))?;
+    if !status.success() {
+        bail!("codesign failed for {}", app_dir.display());
+    }
+
+    let status = Command::new("codesign")
+        .args(["--verify", "--deep", "--strict", "--verbose=2"])
+        .arg(app_dir)
+        .status()
+        .with_context(|| format!("failed to verify code signature for {}", app_dir.display()))?;
+    if !status.success() {
+        bail!("codesign verification failed for {}", app_dir.display());
+    }
+
     Ok(())
 }
 
