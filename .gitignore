@@ -5,6 +5,7 @@
 /logs/
 /notes/
 .DS_Store
+.worktrees/
 
 # Environment
 .env

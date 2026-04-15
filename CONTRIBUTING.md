@@ -106,11 +106,21 @@ cargo run -- permissions all --remove
 
 ### Package the app bundle
 
-Builds a release binary and stages `Jabberwok.app` under `target/xtask/macos/`.
-Also produces `target/xtask/macos/Jabberwok.dmg` for distribution.
+The default macOS packaging flow is CI-safe and deterministic. It performs the
+full build: release binary, staged `Jabberwok.app`, and
+`target/xtask/macos/Jabberwok.dmg`.
 
 ```sh
 cargo xtask package macos
+```
+
+For CI-safe or staged packaging, use the explicit macOS commands:
+
+```sh
+cargo xtask package-macos build-binary
+cargo xtask package-macos stage-app
+cargo xtask package-macos package-dmg
+cargo xtask package-macos all
 ```
 
 ### Install as a background service (local dev)

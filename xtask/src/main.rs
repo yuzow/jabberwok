@@ -21,6 +21,10 @@ enum Command {
         #[arg(value_enum)]
         platform: Platform,
     },
+    PackageMacos {
+        #[arg(value_enum, default_value_t = MacosPackageStage::All)]
+        stage: MacosPackageStage,
+    },
     InstallService {
         #[arg(value_enum)]
         platform: Platform,
@@ -38,11 +42,20 @@ pub enum Platform {
     Linux,
 }
 
+#[derive(Clone, Copy, Debug, ValueEnum)]
+pub enum MacosPackageStage {
+    BuildBinary,
+    StageApp,
+    PackageDmg,
+    All,
+}
+
 fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
         Command::Package { platform } => package::package(platform),
+        Command::PackageMacos { stage } => package::package_macos(stage),
         Command::InstallService { platform } => service::install_service(platform),
         Command::UninstallService { platform } => service::uninstall_service(platform),
     }

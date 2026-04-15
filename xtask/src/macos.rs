@@ -4,7 +4,7 @@ use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use anyhow::{Context, Result, bail};
+use anyhow::{bail, Context, Result};
 
 const APP_NAME: &str = "Jabberwok";
 const INFO_PLIST: &str = include_str!("../assets/macos/Info.plist");
@@ -14,12 +14,16 @@ const APP_BUNDLE: &str = "Jabberwok.app";
 const BUNDLE_IDENTIFIER: &str = "computer.handy.jabberwok";
 
 pub fn package() -> Result<()> {
-    ensure_release_binary()?;
+    stage_app_bundle()?;
+    package_dmg()?;
+    Ok(())
+}
 
-    let stage_dir = stage_dir("macos");
-    reset_stage_dir(&stage_dir)?;
+pub fn stage_app_bundle() -> Result<PathBuf> {
+    let stage_dir = macos_stage_dir();
+    reset_app_stage_dir(&stage_dir)?;
 
-    let app_dir = stage_dir.join(APP_BUNDLE);
+    let app_dir = staged_app_path();
     let contents_dir = app_dir.join("Contents");
     let macos_dir = contents_dir.join("MacOS");
     let resources_dir = contents_dir.join("Resources");
@@ -45,25 +49,17 @@ pub fn package() -> Result<()> {
 
     copy_tree_filtered(Path::new("config"), &defaults_dir.join("config"))?;
 
-    let dmg_path = stage_dir.join("Jabberwok.dmg");
-    create_dmg(&app_dir, &dmg_path)?;
-
     println!("staged macOS app bundle in {}", app_dir.display());
-    println!("created macOS distributable at {}", dmg_path.display());
-    Ok(())
+    Ok(app_dir)
 }
 
-fn ensure_release_binary() -> Result<()> {
-    let status = Command::new("cargo")
-        .args(["build", "--release", "--bin", "jabberwok"])
-        .status()
-        .context("failed to run cargo build --release --bin jabberwok")?;
+pub fn package_dmg() -> Result<PathBuf> {
+    let app_dir = ensure_staged_app_bundle()?;
+    let dmg_path = staged_dmg_path();
 
-    if status.success() {
-        Ok(())
-    } else {
-        bail!("cargo build --release --bin jabberwok failed")
-    }
+    create_dmg(&app_dir, &dmg_path)?;
+    println!("created macOS distributable at {}", dmg_path.display());
+    Ok(dmg_path)
 }
 
 pub fn install_service() -> Result<()> {
@@ -138,11 +134,31 @@ fn stage_dir(platform: &str) -> PathBuf {
     Path::new("target").join("xtask").join(platform)
 }
 
-fn reset_stage_dir(stage_dir: &Path) -> Result<()> {
+fn macos_stage_dir() -> PathBuf {
+    stage_dir("macos")
+}
+
+fn staged_app_path() -> PathBuf {
+    macos_stage_dir().join(APP_BUNDLE)
+}
+
+fn staged_dmg_path() -> PathBuf {
+    macos_stage_dir().join("Jabberwok.dmg")
+}
+
+fn reset_app_stage_dir(stage_dir: &Path) -> Result<()> {
     if stage_dir.exists() {
-        fs::remove_dir_all(stage_dir)
-            .with_context(|| format!("failed to remove {}", stage_dir.display()))?;
+        let app_dir = stage_dir.join(APP_BUNDLE);
+        let dmg_path = stage_dir.join("Jabberwok.dmg");
+        let tmp_dmg_stem = stage_dir.join("Jabberwok-tmp");
+        let tmp_dmg = stage_dir.join("Jabberwok-tmp.dmg");
+
+        remove_path(&app_dir)?;
+        remove_path(&dmg_path)?;
+        remove_path(&tmp_dmg)?;
+        remove_path(&tmp_dmg_stem)?;
     }
+
     fs::create_dir_all(stage_dir)
         .with_context(|| format!("failed to create {}", stage_dir.display()))?;
     Ok(())
@@ -238,29 +254,6 @@ fn create_dmg(app_dir: &Path, dmg_path: &Path) -> Result<()> {
     // 7. Remove temporary writable DMG
     fs::remove_file(&tmp_dmg).with_context(|| format!("failed to remove {}", tmp_dmg.display()))?;
 
-    // 8. Apply app icon to the DMG file itself
-    set_file_icon(dmg_path, Path::new(APP_ICON_PATH))?;
-
-    Ok(())
-}
-
-fn set_file_icon(file: &Path, icon: &Path) -> Result<()> {
-    let icon_str = icon.display();
-    let file_str = file.display();
-    let script = format!(
-        "use framework \"AppKit\"\n\
-         use scripting additions\n\
-         set img to current application's NSImage's alloc()'s initWithContentsOfFile:\"{icon_str}\"\n\
-         current application's NSWorkspace's sharedWorkspace()'s \
-         setIcon:img forFile:\"{file_str}\" options:0"
-    );
-    let status = Command::new("osascript")
-        .args(["-l", "AppleScript", "-e", &script])
-        .status()
-        .context("failed to run osascript to set file icon")?;
-    if !status.success() {
-        bail!("failed to set icon on {}", file.display());
-    }
     Ok(())
 }
 
@@ -323,71 +316,21 @@ fn populate_dmg(app_dir: &Path, mount_point: &Path) -> Result<()> {
         bail!("ln -s failed while creating Applications symlink");
     }
 
-    // Optional background image
-    let bg_src = Path::new("xtask/assets/macos/dmg-background.png");
-    let has_background = bg_src.exists();
-    if has_background {
-        let bg_dir = mount_point.join(".background");
-        fs::create_dir_all(&bg_dir)
-            .with_context(|| format!("failed to create {}", bg_dir.display()))?;
-        let status = Command::new("ditto")
-            .arg(bg_src)
-            .arg(bg_dir.join("background.png"))
-            .status()
-            .context("failed to copy DMG background image")?;
-        if !status.success() {
-            bail!("ditto failed while copying DMG background image");
-        }
-    }
-
-    // Set Finder window layout via AppleScript
-    let bg_line = if has_background {
-        "\t\tset background picture of icon view options of container window to file \".background:background.png\"\n"
-    } else {
-        ""
-    };
-    let mount_str = mount_point.display().to_string();
-    let script = format!(
-        "tell application \"Finder\"\n\
-         \ttell disk (POSIX file \"{mount_str}\" as alias)\n\
-         \t\topen\n\
-         \t\tset current view of container window to icon view\n\
-         \t\tset toolbar visible of container window to false\n\
-         \t\tset statusbar visible of container window to false\n\
-         \t\tset bounds of container window to {{400, 100, 940, 480}}\n\
-         \t\tset icon size of icon view options of container window to 128\n\
-         \t\tset arrangement of icon view options of container window to not arranged\n\
-         {bg_line}\
-         \t\tset position of item \"Jabberwok.app\" of container window to {{160, 200}}\n\
-         \t\tset position of item \"Applications\" of container window to {{380, 200}}\n\
-         \t\tclose\n\
-         \t\topen\n\
-         \t\tupdate without registering applications\n\
-         \t\tdelay 2\n\
-         \t\tclose\n\
-         \tend tell\n\
-         end tell"
-    );
-    let status = Command::new("osascript")
-        .arg("-e")
-        .arg(&script)
-        .status()
-        .context("failed to run osascript")?;
-    if !status.success() {
-        bail!("osascript failed while setting DMG window layout");
-    }
-
     Ok(())
 }
 
 fn ensure_staged_app_bundle() -> Result<PathBuf> {
-    package()?;
-
-    let app_dir = stage_dir("macos").join(APP_BUNDLE);
+    let app_dir = staged_app_path();
     if app_dir.is_dir() {
         Ok(app_dir)
     } else {
-        bail!("expected staged app bundle at {}", app_dir.display())
+        crate::package::build_release_binary()?;
+        let staged_app = stage_app_bundle()?;
+        if staged_app.is_dir() {
+            Ok(staged_app)
+        } else {
+            bail!("expected staged app bundle at {}", app_dir.display())
+        }
     }
 }
 
@@ -545,7 +488,6 @@ fn launch_agent_path() -> Result<PathBuf> {
         .join("LaunchAgents")
         .join(format!("{BUNDLE_IDENTIFIER}.plist")))
 }
-
 fn home_dir() -> Result<PathBuf> {
     let home = std::env::var_os("HOME").context("HOME is not set")?;
     Ok(PathBuf::from(home))

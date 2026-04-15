@@ -1,17 +1,46 @@
 use std::process::Command;
 
-use anyhow::{Context, Result, bail};
+use anyhow::{bail, Context, Result};
 
-use crate::Platform;
+use crate::{MacosPackageStage, Platform};
 
 pub fn package(platform: Platform) -> Result<()> {
     ensure_host_matches(platform)?;
-    build_release_binary()?;
 
     match platform {
-        Platform::Macos => crate::macos::package(),
-        Platform::Windows => crate::windows::package(),
-        Platform::Linux => crate::linux::package(),
+        Platform::Macos => {
+            build_release_binary()?;
+            crate::macos::package()
+        }
+        Platform::Windows => {
+            build_release_binary()?;
+            crate::windows::package()
+        }
+        Platform::Linux => {
+            build_release_binary()?;
+            crate::linux::package()
+        }
+    }
+}
+
+pub fn package_macos(stage: MacosPackageStage) -> Result<()> {
+    ensure_host_matches(Platform::Macos)?;
+
+    match stage {
+        MacosPackageStage::BuildBinary => build_release_binary(),
+        MacosPackageStage::StageApp => {
+            build_release_binary()?;
+            crate::macos::stage_app_bundle()?;
+            Ok(())
+        }
+        MacosPackageStage::PackageDmg => {
+            crate::macos::package_dmg()?;
+            Ok(())
+        }
+        MacosPackageStage::All => {
+            build_release_binary()?;
+            crate::macos::package()
+        }
     }
 }
 
@@ -26,7 +55,7 @@ fn ensure_host_matches(platform: Platform) -> Result<()> {
     }
 }
 
-fn build_release_binary() -> Result<()> {
+pub fn build_release_binary() -> Result<()> {
     let status = Command::new("cargo")
         .args(["build", "--release", "--bin", "jabberwok"])
         .status()
