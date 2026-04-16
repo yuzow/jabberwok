@@ -105,7 +105,6 @@ pub fn run_setup_window(config_path: PathBuf) -> Result<SetupOutcome> {
             if !visible {
                 cancel_requested.store(true, Ordering::Relaxed);
                 return Err(anyhow::anyhow!("setup canceled before completion"));
-
             }
 
             let event: id = msg_send![

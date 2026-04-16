@@ -20,7 +20,14 @@ is. Hold the hotkey, speak, release and your words appear in any focused input.
 
 ## Installation (macOS)
 
-### Download and install
+Jabberwok has two official install paths:
+
+- **DMG** installs `Jabberwok.app` and is the better fit if you want a
+  traditional Mac app workflow.
+- **Homebrew** installs the `jabberwok` CLI binary and is the better fit if you
+  want a fast terminal-first install.
+
+### DMG (`Jabberwok.app`)
 
 1. Download the latest `Jabberwok.dmg` from the [Releases](../../releases) page.
 2. Open the DMG, drag **Jabberwok.app** to your `Applications` folder.
@@ -42,9 +49,41 @@ first launch, use one of these local workarounds:
   open /Applications/Jabberwok.app
   ```
 
-### Homebrew
+### Homebrew (`jabberwok` CLI)
 
-> Coming soon.
+Homebrew installs the CLI binary only. It does **not** install
+`Jabberwok.app`, a DMG, a LaunchAgent, or any login item automatically.
+
+```sh
+brew install yuzow/tap/jabberwok
+```
+
+After install:
+
+1. Download the default model:
+   ```sh
+   jabberwok download-model
+   ```
+2. Request the required permissions from your terminal session:
+   ```sh
+   jabberwok permissions all
+   ```
+3. Check readiness:
+   ```sh
+   jabberwok doctor
+   ```
+4. Run in the foreground:
+   ```sh
+   jabberwok daemon
+   ```
+5. Or keep it running across logins with a per-user LaunchAgent:
+   ```sh
+   jabberwok launch-agent install
+   ```
+
+The Homebrew path is ideal for technical users, but the macOS permission UX is
+less polished than the app bundle. Expect prompts to be attributed to your
+terminal while you complete setup.
 
 ### Rust Crate
 
@@ -52,13 +91,10 @@ first launch, use one of these local workarounds:
 
 ## Getting Started
 
-Once installed, launch Jabberwok from your Applications folder or Spotlight. The
-first-run setup window walks you through the two required steps:
-
-1. **Download the default model** — a quantized on-device speech model (~few
-   hundred MB).
-2. **Grant permissions** — Microphone and Accessibility (see
-   [Permissions](#permissions) below).
+If you installed the DMG, launch Jabberwok from Applications or Spotlight and
+follow the first-run setup window. If you installed via Homebrew, run
+`jabberwok download-model`, `jabberwok permissions all`, and `jabberwok doctor`
+once from your terminal before starting the daemon.
 
 After setup, Jabberwok runs as a background daemon. To use it:
 
@@ -97,6 +133,10 @@ Which app macOS prompts depends on how you launch Jabberwok:
   WezTerm, Kitty, Ghostty, etc.) requests both permissions on Jabberwok's
   behalf. Grant them to **your terminal app** in System Settings → Privacy &
   Security. If you switch terminal apps later, you may need to re-grant.
+
+For the Homebrew install path, it is simplest to grant permissions from the
+terminal first with `jabberwok permissions all`, verify with `jabberwok
+doctor`, and only then install the LaunchAgent for background startup.
 
 Run `jabberwok permissions all` (or `cargo run -- permissions all` from source)
 to open the relevant system settings dialogs directly.
@@ -253,6 +293,17 @@ when Jabberwok is ready and non-zero when setup is incomplete.
 jabberwok doctor
 ```
 
+### `launch-agent`
+
+Manage the per-user macOS LaunchAgent used to keep Jabberwok running after
+login.
+
+```sh
+jabberwok launch-agent status
+jabberwok launch-agent install
+jabberwok launch-agent uninstall
+```
+
 ### `permissions`
 
 Open or guide the required permission flows.
@@ -287,6 +338,12 @@ jabberwok type "hello world"
 **Daemon won't start** Run `jabberwok doctor` to see exactly what is missing
 (model, permissions, etc.).
 
+**Need Jabberwok to stay running after you close the terminal**
+
+- Install the per-user LaunchAgent with `jabberwok launch-agent install`.
+- Check whether it is registered with `jabberwok launch-agent status`.
+- Remove it again with `jabberwok launch-agent uninstall`.
+
 **Text isn't injected after transcription**
 
 - Make sure Accessibility permission is granted for the right app (see
@@ -304,6 +361,10 @@ defined in your config file and can be overridden if needed.
 **Permission shows as granted but still fails after a macOS update** macOS
 occasionally resets Accessibility grants after system updates. Re-run
 `jabberwok permissions all` and re-grant in System Settings.
+
+**Homebrew install was upgraded and background startup stopped working** Re-run
+`jabberwok launch-agent install` so the LaunchAgent points at the current
+installed binary.
 
 ## Contributing
 

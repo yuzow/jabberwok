@@ -3,6 +3,9 @@ name = "xtask"
 version = "0.1.0"
 edition = "2024"
 
+[package.metadata.dist]
+dist = false
+
 [dependencies]
 anyhow = "=1.0.102"
 clap = { version = "=4.6.0", features = ["derive"] }

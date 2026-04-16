@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use anyhow::{Context, Result, bail};
@@ -9,13 +9,11 @@ const LAUNCH_AGENT_PLIST_TEMPLATE: &str =
     include_str!("../../../xtask/assets/macos/LaunchAgent.plist");
 
 pub fn is_launch_agent_installed() -> bool {
-    launch_agent_path()
-        .map(|p| p.exists())
-        .unwrap_or(false)
+    launch_agent_path().map(|p| p.exists()).unwrap_or(false)
 }
 
 pub fn install_launch_agent() -> Result<()> {
-    let exe = std::env::current_exe().context("failed to locate current executable")?;
+    let exe = launch_agent_executable()?;
     let logs_dir = crate::config::logs_dir()?;
 
     let plist = LAUNCH_AGENT_PLIST_TEMPLATE
@@ -34,7 +32,11 @@ pub fn install_launch_agent() -> Result<()> {
     std::fs::write(&agent_path, &plist)
         .with_context(|| format!("failed to write {}", agent_path.display()))?;
 
-    run_launchctl(["bootstrap", &gui_domain()?, &agent_path.display().to_string()])?;
+    run_launchctl([
+        "bootstrap",
+        &gui_domain()?,
+        &agent_path.display().to_string(),
+    ])?;
     run_launchctl(["enable", &service_target()?])?;
 
     Ok(())
@@ -97,4 +99,28 @@ fn service_target() -> Result<String> {
 
 fn current_uid() -> u32 {
     unsafe { libc::getuid() }
+}
+
+fn launch_agent_executable() -> Result<PathBuf> {
+    let exe = std::env::current_exe().context("failed to locate current executable")?;
+    Ok(homebrew_opt_executable(&exe).unwrap_or(exe))
+}
+
+fn homebrew_opt_executable(exe: &Path) -> Option<PathBuf> {
+    let bin_dir = exe.parent()?;
+    let version_dir = bin_dir.parent()?;
+    let package_dir = version_dir.parent()?;
+    let cellar_dir = package_dir.parent()?;
+
+    if package_dir.file_name()? != "jabberwok" || cellar_dir.file_name()? != "Cellar" {
+        return None;
+    }
+
+    let prefix = cellar_dir.parent()?;
+    let opt_exe = prefix
+        .join("opt")
+        .join("jabberwok")
+        .join("bin")
+        .join("jabberwok");
+    opt_exe.exists().then_some(opt_exe)
 }

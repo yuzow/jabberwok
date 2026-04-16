@@ -2,9 +2,25 @@
 name = "jabberwok"
 version = "0.1.0"
 edition = "2024"
+description = "A macOS speech-to-text service that transcribes your voice wherever your cursor is"
+repository = "https://github.com/yuzow/jabberwok"
+homepage = "https://github.com/yuzow/jabberwok"
+license = "MIT"
 
 [workspace]
 members = ["xtask"]
+
+[workspace.metadata.dist]
+cargo-dist-version = "0.31.0"
+ci = ["github"]
+hosting = ["github"]
+installers = ["homebrew"]
+publish-jobs = ["homebrew"]
+publish-prereleases = false
+packages = ["jabberwok"]
+tap = "yuzow/homebrew-tap"
+targets = ["aarch64-apple-darwin", "x86_64-apple-darwin"]
+unix-archive = ".tar.gz"
 
 [dependencies]
 anyhow = "=1.0.102"

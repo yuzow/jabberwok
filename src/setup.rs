@@ -415,8 +415,12 @@ pub fn run_setup_worker(
                 },
                 move |phase| {
                     let (percent, display_phase) = match phase {
-                        "Downloading model..." => (20.0, format!("Downloading {}...", name_for_phase)),
-                        "Extracting model..." => (85.0, format!("Extracting {}...", name_for_phase)),
+                        "Downloading model..." => {
+                            (20.0, format!("Downloading {}...", name_for_phase))
+                        }
+                        "Extracting model..." => {
+                            (85.0, format!("Extracting {}...", name_for_phase))
+                        }
                         "Finishing setup..." => (95.0, "Finishing setup...".to_string()),
                         _ => (20.0, format!("Downloading {}...", name_for_phase)),
                     };

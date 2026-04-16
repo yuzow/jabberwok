@@ -32,7 +32,7 @@ pub use permissions::{
     has_accessibility_permission, has_microphone_permission, open_accessibility_system_settings,
     request_microphone_permission,
 };
-pub use service::install_launch_agent;
+pub use service::{install_launch_agent, is_launch_agent_installed, uninstall_launch_agent};
 pub use setup::run_setup_window;
 pub(super) use tutorial::run_tutorial_window;
 

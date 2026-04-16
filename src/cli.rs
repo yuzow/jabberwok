@@ -120,6 +120,11 @@ pub enum Commands {
         #[arg(long)]
         remove: bool,
     },
+    /// Manage the macOS LaunchAgent used to keep Jabberwok running after login
+    LaunchAgent {
+        /// Operation to perform
+        action: LaunchAgentAction,
+    },
     /// Remove local Jabberwok data and optionally relaunch into setup
     Reset {
         /// App config file
@@ -139,6 +144,13 @@ pub enum PermissionTarget {
     Microphone,
     Accessibility,
     All,
+}
+
+#[derive(Clone, Debug, PartialEq, ValueEnum)]
+pub enum LaunchAgentAction {
+    Install,
+    Uninstall,
+    Status,
 }
 
 impl PermissionTarget {
@@ -235,6 +247,18 @@ mod tests {
     fn unknown_subcommand_is_an_error() {
         let result = Cli::try_parse_from(["jabberwok", "bogus"]);
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn launch_agent_subcommand_parses_ok() {
+        let cli =
+            Cli::try_parse_from(["jabberwok", "launch-agent", "status"]).expect("parse failed");
+        assert_eq!(
+            cli.command,
+            Some(Commands::LaunchAgent {
+                action: LaunchAgentAction::Status,
+            })
+        );
     }
 
     #[test]

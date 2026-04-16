@@ -53,7 +53,6 @@ pub use imp::{
     open_accessibility_system_settings, request_microphone_permission, run_overlay,
 };
 
-
 pub fn runtime_capabilities() -> RuntimeCapabilities {
     imp::runtime_capabilities()
 }
@@ -76,6 +75,33 @@ pub fn ensure_accessibility_permission_for_daemon() -> anyhow::Result<()> {
 
 pub fn clear_permission_state(kind: &str) -> anyhow::Result<()> {
     imp::clear_permission_state(kind)
+}
+
+pub fn is_launch_agent_installed() -> bool {
+    #[cfg(target_os = "macos")]
+    {
+        return imp::is_launch_agent_installed();
+    }
+    #[cfg(not(target_os = "macos"))]
+    false
+}
+
+pub fn install_launch_agent() -> anyhow::Result<()> {
+    #[cfg(target_os = "macos")]
+    {
+        return imp::install_launch_agent();
+    }
+    #[cfg(not(target_os = "macos"))]
+    anyhow::bail!("launch-agent management is only available on macOS")
+}
+
+pub fn uninstall_launch_agent() -> anyhow::Result<()> {
+    #[cfg(target_os = "macos")]
+    {
+        return imp::uninstall_launch_agent();
+    }
+    #[cfg(not(target_os = "macos"))]
+    anyhow::bail!("launch-agent management is only available on macOS")
 }
 
 pub fn setup_window(config_path: std::path::PathBuf) -> anyhow::Result<()> {

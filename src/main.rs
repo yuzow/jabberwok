@@ -13,7 +13,7 @@ mod transcribe;
 
 use anyhow::Context;
 use clap::Parser;
-use cli::{Cli, Commands, normalize_args};
+use cli::{Cli, Commands, LaunchAgentAction, normalize_args};
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
@@ -115,6 +115,25 @@ where
                 );
             }
         }
+        Some(Commands::LaunchAgent { action }) => match action {
+            LaunchAgentAction::Install => {
+                os::install_launch_agent()?;
+                println!(
+                    "Installed the Jabberwok LaunchAgent. It will start automatically when you sign in."
+                );
+            }
+            LaunchAgentAction::Uninstall => {
+                os::uninstall_launch_agent()?;
+                println!("Removed the Jabberwok LaunchAgent.");
+            }
+            LaunchAgentAction::Status => {
+                if os::is_launch_agent_installed() {
+                    println!("Jabberwok LaunchAgent: installed");
+                } else {
+                    println!("Jabberwok LaunchAgent: not installed");
+                }
+            }
+        },
         Some(Commands::Reset {
             config,
             wait_for_pid,
@@ -181,7 +200,14 @@ where
             }
 
             tracing::info!(save_utterances, "starting daemon");
-            daemon::run(&model_path, save_utterances, device_prefs, hostname, config, false)?;
+            daemon::run(
+                &model_path,
+                save_utterances,
+                device_prefs,
+                hostname,
+                config,
+                false,
+            )?;
         }
         Some(Commands::ListDevices { config }) => {
             let config = resolve_config_path(config.as_ref())?;

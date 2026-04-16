@@ -125,7 +125,10 @@ where
         }
 
         let digest = hasher.finalize();
-        let actual = digest.iter().map(|b| format!("{:02x}", b)).collect::<String>();
+        let actual = digest
+            .iter()
+            .map(|b| format!("{:02x}", b))
+            .collect::<String>();
         if let Some(expected) = entry.sha256.as_deref()
             && expected.trim() != actual
         {

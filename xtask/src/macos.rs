@@ -4,7 +4,7 @@ use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 
 const APP_NAME: &str = "Jabberwok";
 const INFO_PLIST: &str = include_str!("../assets/macos/Info.plist");

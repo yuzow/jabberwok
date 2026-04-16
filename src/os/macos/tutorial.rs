@@ -16,8 +16,7 @@ use objc::{class, msg_send, sel, sel_impl};
 
 use super::objc_util::{make_button, make_text, nsstring};
 
-const KEY_IMAGE_DATA: &[u8] =
-    include_bytes!("../../../xtask/assets/macos/right_command_key.png");
+const KEY_IMAGE_DATA: &[u8] = include_bytes!("../../../xtask/assets/macos/right_command_key.png");
 
 const ACTION_NONE: u8 = 0;
 const ACTION_NEXT: u8 = 1;
@@ -76,7 +75,8 @@ pub fn run_tutorial_window(config_path: PathBuf) -> Result<()> {
             let b2_len: usize = msg_send![b2_val, length];
             let b3_val: id = msg_send![ctrl.box3, stringValue];
             let b3_len: usize = msg_send![b3_val, length];
-            let _: () = msg_send![ctrl.next_btn2, setEnabled: (b1_len > 0 && b2_len > 0 && b3_len > 0)];
+            let _: () =
+                msg_send![ctrl.next_btn2, setEnabled: (b1_len > 0 && b2_len > 0 && b3_len > 0)];
 
             let action = TUTORIAL_ACTION.swap(ACTION_NONE, Ordering::Relaxed);
             match action {
@@ -130,11 +130,11 @@ struct TutorialControls {
     screen2: id,
     screen3: id,
     screen1_text: id,
-    next_btn: id,   // screen 1 → screen 2
+    next_btn: id, // screen 1 → screen 2
     box1: id,
     box2: id,
     box3: id,
-    next_btn2: id,  // screen 2 → screen 3 (enabled when all boxes have content)
+    next_btn2: id, // screen 2 → screen 3 (enabled when all boxes have content)
 }
 
 unsafe fn build_tutorial_window(target: id) -> TutorialControls {
@@ -181,7 +181,18 @@ unsafe fn build_tutorial_window(target: id) -> TutorialControls {
     let _: () = msg_send![content, addSubview: screen3];
     build_screen3(screen3, target);
 
-    TutorialControls { window, screen1, screen2, screen3, screen1_text, next_btn, box1, box2, box3, next_btn2 }
+    TutorialControls {
+        window,
+        screen1,
+        screen2,
+        screen3,
+        screen1_text,
+        next_btn,
+        box1,
+        box2,
+        box3,
+        next_btn2,
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -287,7 +298,7 @@ unsafe fn build_screen2(parent: id, target: id) -> (id, id, id, id) {
         panel,
         initWithFrame: NSRect::new(NSPoint::new(20.0, 258.0), NSSize::new(285.0, 200.0))
     ];
-    let _: () = msg_send![panel, setBoxType: 4_i32];     // NSBoxCustom
+    let _: () = msg_send![panel, setBoxType: 4_i32]; // NSBoxCustom
     let _: () = msg_send![panel, setTitlePosition: 0_i32]; // NSNoTitle
     let _: () = msg_send![panel, setBorderWidth: 0.0_f64];
     let dark: id = msg_send![class!(NSColor), colorWithWhite: 0.14_f64 alpha: 1.0_f64];
