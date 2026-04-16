@@ -13,11 +13,12 @@ pub fn is_launch_agent_installed() -> bool {
 }
 
 pub fn install_launch_agent() -> Result<()> {
-    let exe = launch_agent_executable()?;
+    let exe = launch_agent_executable_path()?;
     let logs_dir = crate::config::logs_dir()?;
+    let program_arguments = launch_agent_program_arguments(&exe);
 
     let plist = LAUNCH_AGENT_PLIST_TEMPLATE
-        .replace("__APP_EXECUTABLE__", &exe.display().to_string())
+        .replace("__PROGRAM_ARGUMENTS__", &program_arguments)
         .replace("__LOGS_DIR__", &logs_dir.display().to_string());
 
     let agent_path = launch_agent_path()?;
@@ -106,6 +107,32 @@ fn launch_agent_executable() -> Result<PathBuf> {
     Ok(homebrew_opt_executable(&exe).unwrap_or(exe))
 }
 
+pub fn launch_agent_executable_path() -> Result<PathBuf> {
+    launch_agent_executable()
+}
+
+fn launch_agent_program_arguments(exe: &Path) -> String {
+    let mut xml = String::from("  <array>\n");
+    xml.push_str(&format!(
+        "    <string>{}</string>\n",
+        xml_escape(&exe.display().to_string())
+    ));
+    if !crate::config::is_bundled_app() {
+        xml.push_str("    <string>daemon</string>\n");
+    }
+    xml.push_str("  </array>");
+    xml
+}
+
+fn xml_escape(value: &str) -> String {
+    value
+        .replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+        .replace('\"', "&quot;")
+        .replace('\'', "&apos;")
+}
+
 fn homebrew_opt_executable(exe: &Path) -> Option<PathBuf> {
     let bin_dir = exe.parent()?;
     let version_dir = bin_dir.parent()?;
@@ -123,4 +150,21 @@ fn homebrew_opt_executable(exe: &Path) -> Option<PathBuf> {
         .join("bin")
         .join("jabberwok");
     opt_exe.exists().then_some(opt_exe)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn xml_escape_escapes_reserved_characters() {
+        assert_eq!(xml_escape("&<>'\""), "&amp;&lt;&gt;&apos;&quot;");
+    }
+
+    #[test]
+    fn unbundled_launch_agent_arguments_run_daemon() {
+        let xml = launch_agent_program_arguments(Path::new("/tmp/jabberwok"));
+        assert!(xml.contains("<string>/tmp/jabberwok</string>"));
+        assert!(xml.contains("<string>daemon</string>"));
+    }
 }

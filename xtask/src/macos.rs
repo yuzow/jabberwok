@@ -402,16 +402,28 @@ fn install_launch_agent(launch_agent_path: &Path, installed_executable: &Path) -
         .with_context(|| format!("failed to create {}", launch_agents_dir.display()))?;
 
     let logs_dir = home_dir()?.join("Library").join("Logs").join("jabberwok");
+    let program_arguments = launch_agent_program_arguments(installed_executable);
     let plist = LAUNCH_AGENT_PLIST
-        .replace(
-            "__APP_EXECUTABLE__",
-            &installed_executable.display().to_string(),
-        )
+        .replace("__PROGRAM_ARGUMENTS__", &program_arguments)
         .replace("__LOGS_DIR__", &logs_dir.display().to_string());
 
     fs::write(launch_agent_path, plist)
         .with_context(|| format!("failed to write {}", launch_agent_path.display()))?;
     Ok(())
+}
+
+fn launch_agent_program_arguments(installed_executable: &Path) -> String {
+    let executable = xml_escape(&installed_executable.display().to_string());
+    format!("  <array>\n    <string>{executable}</string>\n  </array>")
+}
+
+fn xml_escape(value: &str) -> String {
+    value
+        .replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+        .replace('\"', "&quot;")
+        .replace('\'', "&apos;")
 }
 
 fn reset_accessibility_permission() -> Result<()> {

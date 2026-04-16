@@ -101,25 +101,41 @@ where
             if remove {
                 println!("{}", setup::remove_permissions(target.command_name())?);
             } else {
-                if setup::permission_already_granted(target.command_name())? {
+                let target_name = target.command_name();
+                let already_granted = setup::permission_already_granted(target_name)?;
+                let always_open_settings =
+                    matches!(target_name, "accessibility" | "all") && cfg!(target_os = "macos");
+
+                if already_granted && !always_open_settings {
                     println!(
                         "{} permission is already granted.\nNote: for `cargo run`, this may reflect the current host app (Terminal, WezTerm, etc.) rather than the packaged Jabberwok app.",
-                        target.command_name()
+                        target_name
                     );
                     return Ok(());
                 }
-                setup::request_permission(target.command_name())?;
-                println!(
-                    "Requested {} permission flow. If it did not open automatically, use System Settings manually.\nNote: grant permission to the application (Terminal, Wezterm, etc.) that you're currently running in.",
-                    target.command_name()
-                );
+                setup::request_permission(target_name)?;
+                let instructions = setup::permission_request_instructions(target_name)?;
+                if already_granted && always_open_settings {
+                    println!(
+                        "{instructions}\nNote: the current process already appears trusted, but for `cargo run` this may only reflect Terminal or WezTerm rather than the binary launched by LaunchAgent."
+                    );
+                } else {
+                    println!("{instructions}");
+                }
             }
         }
         Some(Commands::LaunchAgent { action }) => match action {
             LaunchAgentAction::Install => {
                 os::install_launch_agent()?;
+                #[cfg(target_os = "macos")]
+                {
+                    os::open_accessibility_system_settings();
+                }
+                let launch_agent_exe = os::launch_agent_executable_path()
+                    .map(|p| p.display().to_string())
+                    .unwrap_or_else(|_| "<unknown>".to_string());
                 println!(
-                    "Installed the Jabberwok LaunchAgent. It will start automatically when you sign in."
+                    "Installed the Jabberwok LaunchAgent. It will start automatically when you sign in.\nOpened Accessibility settings.\nApprove this executable for Accessibility if it is not already enabled:\n{launch_agent_exe}\nmacOS does not allow Jabberwok to add or grant the Accessibility entry automatically."
                 );
             }
             LaunchAgentAction::Uninstall => {
@@ -160,13 +176,22 @@ where
             tracing::info!("command: daemon");
             let config = resolve_config_path(config.as_ref())?;
             let ready = setup::evaluate_readiness(&config)?;
+            ready.log_for_startup(&config);
 
             if !ready.microphone_permission_granted {
+                tracing::warn!(
+                    config = %config.display(),
+                    "daemon startup blocked: microphone permission not granted"
+                );
                 anyhow::bail!(
                     "microphone permission required. run `jabberwok permissions microphone`"
                 );
             }
             if !ready.accessibility_permission_granted {
+                tracing::warn!(
+                    config = %config.display(),
+                    "daemon startup blocked: accessibility permission not granted"
+                );
                 anyhow::bail!(
                     "accessibility permission required. run `jabberwok permissions accessibility`"
                 );
@@ -347,7 +372,14 @@ where
 
 fn start_or_setup_daemon(config_path: PathBuf) -> anyhow::Result<()> {
     let readiness = setup::evaluate_readiness(&config_path)?;
+    readiness.log_for_startup(&config_path);
     if !readiness.can_start_daemon {
+        tracing::warn!(
+            config = %config_path.display(),
+            startup_state = ?readiness.startup_state,
+            repair_reason = readiness.repair_reason.as_deref().unwrap_or("<none>"),
+            "daemon startup deferred because setup is incomplete"
+        );
         if let Ok(info) = setup::doctor_text(&config_path) {
             println!("{}", info);
         }

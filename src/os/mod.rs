@@ -95,6 +95,15 @@ pub fn install_launch_agent() -> anyhow::Result<()> {
     anyhow::bail!("launch-agent management is only available on macOS")
 }
 
+pub fn launch_agent_executable_path() -> anyhow::Result<std::path::PathBuf> {
+    #[cfg(target_os = "macos")]
+    {
+        imp::launch_agent_executable_path()
+    }
+    #[cfg(not(target_os = "macos"))]
+    anyhow::bail!("launch-agent management is only available on macOS")
+}
+
 pub fn uninstall_launch_agent() -> anyhow::Result<()> {
     #[cfg(target_os = "macos")]
     {
@@ -108,7 +117,9 @@ pub fn setup_window(config_path: std::path::PathBuf) -> anyhow::Result<()> {
     #[cfg(target_os = "macos")]
     {
         let outcome = imp::run_setup_window(config_path)?;
-        if outcome.launch_at_login && let Err(e) = imp::install_launch_agent() {
+        if outcome.launch_at_login
+            && let Err(e) = imp::install_launch_agent()
+        {
             tracing::warn!(error = %e, "failed to install launch agent; continuing without it");
         }
         Ok(())

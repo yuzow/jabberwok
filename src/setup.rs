@@ -28,6 +28,31 @@ pub struct Readiness {
     pub repair_reason: Option<String>,
 }
 
+impl Readiness {
+    pub fn log_for_startup(&self, config_path: &Path) {
+        tracing::info!(
+            config_path = %config_path.display(),
+            parseable_config = self.parseable_config,
+            default_model_name = self.default_model_name.as_deref().unwrap_or("<none>"),
+            default_model_path = self
+                .default_model_path
+                .as_ref()
+                .map(|p| p.display().to_string())
+                .unwrap_or_else(|| "<none>".to_string()),
+            model_installed = self.model_installed,
+            model_dir_writable = self.model_dir_writable,
+            model_dir_enough_space = self.model_dir_enough_space,
+            model_dir_free_bytes = self.model_dir_free_bytes,
+            microphone_permission_granted = self.microphone_permission_granted,
+            accessibility_permission_granted = self.accessibility_permission_granted,
+            can_start_daemon = self.can_start_daemon,
+            startup_state = ?self.startup_state,
+            repair_reason = self.repair_reason.as_deref().unwrap_or("<none>"),
+            "startup readiness evaluated"
+        );
+    }
+}
+
 pub fn models_dir_for_config(config_path: &Path) -> PathBuf {
     LocalStatePaths::from_config_path(config_path)
         .map(|paths| paths.models_dir)
@@ -510,6 +535,57 @@ pub fn request_permission(name: &str) -> Result<()> {
             os::request_microphone_permission();
             os::open_accessibility_system_settings();
             Ok(())
+        }
+        _ => Err(anyhow!("unknown permission target: {name}")),
+    }
+}
+
+pub fn permission_request_instructions(name: &str) -> Result<String> {
+    let current_exe = std::env::current_exe()
+        .map(|p| p.display().to_string())
+        .unwrap_or_else(|_| "<unknown>".to_string());
+    let launch_agent_exe = crate::os::launch_agent_executable_path()
+        .ok()
+        .map(|p| p.display().to_string());
+
+    match name {
+        "microphone" => Ok(format!(
+            "Requested microphone permission flow.\nCurrent executable: {current_exe}"
+        )),
+        "accessibility" => {
+            let mut lines = vec![
+                "Opened Accessibility settings.".to_string(),
+                "macOS does not allow Jabberwok to add or grant Accessibility permission automatically.".to_string(),
+                format!("Current executable: {current_exe}"),
+            ];
+            if let Some(path) = launch_agent_exe.as_deref()
+                && path != current_exe
+            {
+                lines.push(format!("LaunchAgent executable: {path}"));
+            }
+            lines.push(
+                "Use the + button in System Settings if needed, add the executable you actually run, and enable it."
+                    .to_string(),
+            );
+            Ok(lines.join("\n"))
+        }
+        "all" => {
+            let mut lines = vec![
+                "Requested microphone permission flow and opened Accessibility settings."
+                    .to_string(),
+                "macOS does not allow Jabberwok to add or grant Accessibility permission automatically.".to_string(),
+                format!("Current executable: {current_exe}"),
+            ];
+            if let Some(path) = launch_agent_exe.as_deref()
+                && path != current_exe
+            {
+                lines.push(format!("LaunchAgent executable: {path}"));
+            }
+            lines.push(
+                "Use the + button in System Settings if needed, add the executable you actually run, and enable it."
+                    .to_string(),
+            );
+            Ok(lines.join("\n"))
         }
         _ => Err(anyhow!("unknown permission target: {name}")),
     }
