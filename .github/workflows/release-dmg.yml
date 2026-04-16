@@ -1,0 +1,45 @@
+name: Release DMG
+
+on:
+  push:
+    tags:
+      - '**[0-9]+.[0-9]+.[0-9]+*'
+
+permissions:
+  contents: write
+
+jobs:
+  release-macos:
+    name: Build macOS DMG
+    runs-on: macos-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+          submodules: recursive
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust build outputs
+        uses: Swatinem/rust-cache@v2
+
+      - name: Build unsigned DMG
+        run: cargo xtask package-macos all
+
+      - name: Prepare versioned DMG asset
+        run: cp target/xtask/macos/Jabberwok.dmg "target/xtask/macos/Jabberwok-${{ github.ref_name }}.dmg"
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: jabberwok-${{ github.ref_name }}-macos-dmg
+          path: target/xtask/macos/Jabberwok-${{ github.ref_name }}.dmg
+          if-no-files-found: error
+
+      - name: Upload DMG to GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload "${{ github.ref_name }}" "target/xtask/macos/Jabberwok-${{ github.ref_name }}.dmg" --clobber
