@@ -139,3 +139,27 @@ Removes the LaunchAgent and deletes `~/Applications/Jabberwok.app`.
 ```sh
 cargo xtask uninstall-service macos
 ```
+
+## Releasing
+
+Prepare a tagged release from a clean working tree with one command:
+
+```sh
+cargo xtask release 0.1.1
+# or a prerelease
+cargo xtask release 0.1.1-rc.1
+```
+
+That command:
+
+- updates the root package version in `Cargo.toml`,
+- regenerates `Cargo.lock`,
+- creates a `Release v0.1.1` commit,
+- creates a matching `v0.1.1` git tag.
+
+Push the release after it succeeds:
+
+```sh
+git push origin main
+git push origin v0.1.1
+```

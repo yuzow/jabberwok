@@ -1,6 +1,7 @@
 mod linux;
 mod macos;
 mod package;
+mod release;
 mod service;
 mod windows;
 
@@ -33,6 +34,9 @@ enum Command {
         #[arg(value_enum)]
         platform: Platform,
     },
+    Release {
+        version: String,
+    },
 }
 
 #[derive(Clone, Copy, Debug, ValueEnum)]
@@ -58,5 +62,6 @@ fn main() -> Result<()> {
         Command::PackageMacos { stage } => package::package_macos(stage),
         Command::InstallService { platform } => service::install_service(platform),
         Command::UninstallService { platform } => service::uninstall_service(platform),
+        Command::Release { version } => release::prepare_release(&version),
     }
 }
