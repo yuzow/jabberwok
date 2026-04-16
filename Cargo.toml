@@ -10,16 +10,26 @@ license = "MIT"
 [workspace]
 members = ["xtask"]
 
+# Config for 'dist'
 [workspace.metadata.dist]
+# The preferred dist version to use in CI (Cargo.toml SemVer syntax)
 cargo-dist-version = "0.31.0"
-ci = ["github"]
-hosting = ["github"]
+# CI backends to support
+ci = "github"
+# Where to host releases
+hosting = "github"
+# The installers to generate for each app
 installers = ["homebrew"]
+# Publish jobs to run in CI
 publish-jobs = ["homebrew"]
+# Whether to publish prereleases to package managers
 publish-prereleases = false
 packages = ["jabberwok"]
+# A GitHub repo to push Homebrew formulas to
 tap = "yuzow/homebrew-tap"
+# Target platforms to build apps for (Rust target-triple syntax)
 targets = ["aarch64-apple-darwin", "x86_64-apple-darwin"]
+# The archive format to use for non-windows builds (defaults .tar.xz)
 unix-archive = ".tar.gz"
 
 [dependencies]
@@ -59,3 +69,8 @@ objc = "=0.2.7"
 # internal macros (a known upstream issue).
 [lints.rust]
 unexpected_cfgs = "allow"
+
+# The profile that 'dist' will build with
+[profile.dist]
+inherits = "release"
+lto = "thin"
