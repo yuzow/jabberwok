@@ -39,9 +39,7 @@ pub fn prepare_release(version: &str, push: bool) -> Result<()> {
     let branch = current_branch()?;
 
     if push {
-        if let Err(err) = push_release(&branch, version) {
-            return Err(err);
-        }
+        push_release(&branch, version)?;
     }
 
     println!("prepared release v{version}");

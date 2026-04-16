@@ -109,10 +109,8 @@ pub fn run(
     // background. The text boxes in the tutorial receive injected text from the
     // daemon naturally — no special wiring needed. The tutorial blocks this
     // thread until the user dismisses it, then we proceed to the overlay.
-    if show_tutorial {
-        if let Err(e) = os::tutorial_window(config_path.clone()) {
-            tracing::warn!(error = %e, "tutorial window failed; continuing to overlay");
-        }
+    if show_tutorial && let Err(e) = os::tutorial_window(config_path.clone()) {
+        tracing::warn!(error = %e, "tutorial window failed; continuing to overlay");
     }
 
     os::run_overlay(

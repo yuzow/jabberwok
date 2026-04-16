@@ -80,7 +80,7 @@ pub fn clear_permission_state(kind: &str) -> anyhow::Result<()> {
 pub fn is_launch_agent_installed() -> bool {
     #[cfg(target_os = "macos")]
     {
-        return imp::is_launch_agent_installed();
+        imp::is_launch_agent_installed()
     }
     #[cfg(not(target_os = "macos"))]
     false
@@ -89,7 +89,7 @@ pub fn is_launch_agent_installed() -> bool {
 pub fn install_launch_agent() -> anyhow::Result<()> {
     #[cfg(target_os = "macos")]
     {
-        return imp::install_launch_agent();
+        imp::install_launch_agent()
     }
     #[cfg(not(target_os = "macos"))]
     anyhow::bail!("launch-agent management is only available on macOS")
@@ -98,7 +98,7 @@ pub fn install_launch_agent() -> anyhow::Result<()> {
 pub fn uninstall_launch_agent() -> anyhow::Result<()> {
     #[cfg(target_os = "macos")]
     {
-        return imp::uninstall_launch_agent();
+        imp::uninstall_launch_agent()
     }
     #[cfg(not(target_os = "macos"))]
     anyhow::bail!("launch-agent management is only available on macOS")
@@ -108,12 +108,10 @@ pub fn setup_window(config_path: std::path::PathBuf) -> anyhow::Result<()> {
     #[cfg(target_os = "macos")]
     {
         let outcome = imp::run_setup_window(config_path)?;
-        if outcome.launch_at_login {
-            if let Err(e) = imp::install_launch_agent() {
-                tracing::warn!(error = %e, "failed to install launch agent; continuing without it");
-            }
+        if outcome.launch_at_login && let Err(e) = imp::install_launch_agent() {
+            tracing::warn!(error = %e, "failed to install launch agent; continuing without it");
         }
-        return Ok(());
+        Ok(())
     }
     #[cfg(not(target_os = "macos"))]
     imp::run_setup_window(config_path)

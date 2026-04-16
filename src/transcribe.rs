@@ -58,6 +58,8 @@ fn whisper(model_path: &Path, wav_path: &Path) -> Result<String> {
     let opts = TranscribeOptions {
         language: None,
         translate: false,
+        leading_silence_ms: None,
+        trailing_silence_ms: None,
     };
 
     let result = engine
