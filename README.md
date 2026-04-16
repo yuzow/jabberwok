@@ -54,6 +54,9 @@ first launch, use one of these local workarounds:
 Homebrew installs the CLI binary only. It does **not** install
 `Jabberwok.app`, a DMG, a LaunchAgent, or any login item automatically.
 
+Current Homebrew release support is **Apple Silicon only** (`aarch64-apple-darwin`).
+Intel Mac support is not published through the formula yet.
+
 ```sh
 brew install yuzow/tap/jabberwok
 ```

@@ -28,7 +28,7 @@ packages = ["jabberwok"]
 # A GitHub repo to push Homebrew formulas to
 tap = "yuzow/homebrew-tap"
 # Target platforms to build apps for (Rust target-triple syntax)
-targets = ["aarch64-apple-darwin", "x86_64-apple-darwin"]
+targets = ["aarch64-apple-darwin"]
 # The archive format to use for non-windows builds (defaults .tar.xz)
 unix-archive = ".tar.gz"
 
