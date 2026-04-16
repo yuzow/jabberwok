@@ -7,7 +7,7 @@ use anyhow::{Context, Result, bail};
 const ROOT_CARGO_TOML: &str = "Cargo.toml";
 const ROOT_CARGO_LOCK: &str = "Cargo.lock";
 
-pub fn prepare_release(version: &str) -> Result<()> {
+pub fn prepare_release(version: &str, push: bool) -> Result<()> {
     validate_version(version)?;
     ensure_git_clean()?;
 
@@ -36,8 +36,20 @@ pub fn prepare_release(version: &str) -> Result<()> {
         return Err(err);
     }
 
+    let branch = current_branch()?;
+
+    if push {
+        if let Err(err) = push_release(&branch, version) {
+            return Err(err);
+        }
+    }
+
     println!("prepared release v{version}");
-    println!("next: git push origin main && git push origin v{version}");
+    if push {
+        println!("pushed {branch} and v{version} to origin");
+    } else {
+        println!("next: git push origin {branch} && git push origin v{version}");
+    }
     Ok(())
 }
 
@@ -139,6 +151,30 @@ fn commit_and_tag(version: &str) -> Result<()> {
     run_git(["add", ROOT_CARGO_TOML, ROOT_CARGO_LOCK])?;
     run_git(["commit", "-m", &format!("Release v{version}")])?;
     run_git(["tag", &format!("v{version}")])?;
+    Ok(())
+}
+
+fn current_branch() -> Result<String> {
+    let output = Command::new("git")
+        .args(["branch", "--show-current"])
+        .output()
+        .context("failed to run git branch --show-current")?;
+
+    if !output.status.success() {
+        bail!("git branch --show-current failed");
+    }
+
+    let branch = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    if branch.is_empty() {
+        bail!("release helper must be run from a named branch");
+    }
+
+    Ok(branch)
+}
+
+fn push_release(branch: &str, version: &str) -> Result<()> {
+    run_git(["push", "origin", branch])?;
+    run_git(["push", "origin", &format!("v{version}")])?;
     Ok(())
 }
 

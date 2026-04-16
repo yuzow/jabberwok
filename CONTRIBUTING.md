@@ -148,6 +148,8 @@ Prepare a tagged release from a clean working tree with one command:
 cargo xtask release 0.1.1
 # or a prerelease
 cargo xtask release 0.1.1-rc.1
+# or prepare and push in one step
+cargo xtask release 0.1.1 --push
 ```
 
 That command:
@@ -162,4 +164,10 @@ Push the release after it succeeds:
 ```sh
 git push origin main
 git push origin v0.1.1
+```
+
+Or let `xtask` push the current branch and matching tag for you:
+
+```sh
+cargo xtask release 0.1.1 --push
 ```

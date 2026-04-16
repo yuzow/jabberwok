@@ -36,6 +36,8 @@ enum Command {
     },
     Release {
         version: String,
+        #[arg(long)]
+        push: bool,
     },
 }
 
@@ -62,6 +64,6 @@ fn main() -> Result<()> {
         Command::PackageMacos { stage } => package::package_macos(stage),
         Command::InstallService { platform } => service::install_service(platform),
         Command::UninstallService { platform } => service::uninstall_service(platform),
-        Command::Release { version } => release::prepare_release(&version),
+        Command::Release { version, push } => release::prepare_release(&version, push),
     }
 }
