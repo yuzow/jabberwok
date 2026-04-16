@@ -3,7 +3,8 @@
 A macOS speech-to-text service that transcribes your voice wherever your cursor
 is. Hold the hotkey, speak, release and your words appear in any focused input.
 
-**100% local and offline.** Audio never leaves your machine.
+**100% private, local and offline.** Audio and transcriptions never leave your
+machine.
 
 <!-- TODO: add a demo GIF here -->
 
@@ -19,13 +20,6 @@ is. Hold the hotkey, speak, release and your words appear in any focused input.
   Accessibility API
 
 ## Installation (macOS)
-
-Jabberwok has two official install paths:
-
-- **DMG** installs `Jabberwok.app` and is the better fit if you want a
-  traditional Mac app workflow.
-- **Homebrew** installs the `jabberwok` CLI binary and is the better fit if you
-  want a fast terminal-first install.
 
 ### DMG (`Jabberwok.app`)
 
@@ -51,11 +45,12 @@ first launch, use one of these local workarounds:
 
 ### Homebrew (`jabberwok` CLI)
 
-Homebrew installs the CLI binary only. It does **not** install
-`Jabberwok.app`, a DMG, a LaunchAgent, or any login item automatically.
+Homebrew installs the CLI binary only. It does **not** install `Jabberwok.app`,
+a DMG, a LaunchAgent, or any login item automatically.
 
-Current Homebrew release support is **Apple Silicon only** (`aarch64-apple-darwin`).
-Intel Mac support is not published through the formula yet.
+Current Homebrew release support is **Apple Silicon only**
+(`aarch64-apple-darwin`). Intel Mac support is not published through the formula
+yet.
 
 ```sh
 brew install yuzow/tap/jabberwok
@@ -87,10 +82,6 @@ After install:
 The Homebrew path is ideal for technical users, but the macOS permission UX is
 less polished than the app bundle. Expect prompts to be attributed to your
 terminal while you complete setup.
-
-### Rust Crate
-
-> Coming soon.
 
 ## Getting Started
 
@@ -138,8 +129,8 @@ Which app macOS prompts depends on how you launch Jabberwok:
   Security. If you switch terminal apps later, you may need to re-grant.
 
 For the Homebrew install path, it is simplest to grant permissions from the
-terminal first with `jabberwok permissions all`, verify with `jabberwok
-doctor`, and only then install the LaunchAgent for background startup.
+terminal first with `jabberwok permissions all`, verify with `jabberwok doctor`,
+and only then install the LaunchAgent for background startup.
 
 Run `jabberwok permissions all` (or `cargo run -- permissions all` from source)
 to open the relevant system settings dialogs directly.
