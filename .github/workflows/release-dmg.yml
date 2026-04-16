@@ -39,6 +39,19 @@ jobs:
           path: target/xtask/macos/Jabberwok-${{ github.ref_name }}.dmg
           if-no-files-found: error
 
+      - name: Wait for GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          for _ in $(seq 1 30); do
+            if gh release view "${{ github.ref_name }}" >/dev/null 2>&1; then
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "release ${{ github.ref_name }} was not created within 5 minutes" >&2
+          exit 1
+
       - name: Upload DMG to GitHub release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
